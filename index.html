@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>계절의 변화 탐험 게임</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            touch-action: manipulation;
+        }
+        .season-spring { background: linear-gradient(to bottom, #a8e063, #56ab2f); }
+        .season-summer { background: linear-gradient(to bottom, #f8b500, #fceabb); }
+        .season-autumn { background: linear-gradient(to bottom, #e67e22, #f39c12); }
+        .season-winter { background: linear-gradient(to bottom, #00c6ff, #0072ff); }
+        .season-experiment { background: linear-gradient(to bottom, #d7d2cc, #304352); }
+        .season-final { background: linear-gradient(to bottom, #8e44ad, #9b59b6); }
+        .game-card {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .option-btn {
+            transition: all 0.3s ease;
+        }
+        .option-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .option-btn.correct {
+            animation: correct-pulse 0.5s ease;
+        }
+        .option-btn.incorrect {
+            animation: incorrect-shake 0.5s ease;
+        }
+        @keyframes correct-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); background-color: #2ecc71; color: white;}
+            100% { transform: scale(1); }
+        }
+        @keyframes incorrect-shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="transition-colors duration-1000">
+
+    <div id="game-container" class="min-h-screen w-full flex items-center justify-center p-4">
+        <div id="game-card" class="game-card w-full max-w-2xl rounded-2xl p-6 md:p-10 shadow-lg text-center">
+            
+            <!-- 캐릭터 아이콘 -->
+            <div id="character-icon" class="text-6xl mb-4">🌍</div>
+            
+            <!-- 게임 내용 -->
+            <h1 id="title" class="text-2xl md:text-3xl font-bold text-gray-800 mb-2"></h1>
+            <p id="story" class="text-gray-600 mb-6 text-base md:text-lg"></p>
+            <h2 id="question" class="text-xl md:text-2xl font-bold text-gray-800 mb-6"></h2>
+
+            <!-- 선택지 버튼 -->
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </div>
+
+            <!-- 피드백 메시지 -->
+            <p id="feedback" class="mt-6 text-lg font-semibold h-8"></p>
+
+            <!-- 다음 단계 버튼 -->
+            <button id="next-btn" class="hidden mt-8 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-transform duration-200 hover:scale-105">
+                다음으로
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const gameData = [
+            {
+                season: 'intro',
+                icon: '🧑‍🔬',
+                title: '계절 탐험대에 온 것을 환영해!',
+                story: '나는 계절의 비밀을 연구하는 탐험가란다. 너도 오늘부터 나와 함께 지구의 아름다운 사계절을 탐험하며 그 원리를 밝혀보지 않을래?',
+                question: '탐험을 시작할 준비가 되었니?',
+                options: [{ text: '네, 준비됐어요!', answer: true }],
+                feedbackCorrect: '좋아! 그럼 봄부터 시작해보자!'
+            },
+            {
+                season: 'spring',
+                icon: '🌱',
+                title: '봄: 생명이 깨어나는 계절',
+                story: '따스한 햇살과 함께 얼었던 땅이 녹고 새싹이 돋아나고 있어. 낮의 길이가 점점 길어지고 기온도 올라가기 시작했어.',
+                question: '봄에 낮의 길이가 길어지고 따뜻해지는 이유는 무엇일까?',
+                options: [
+                    { text: '태양의 고도가 점점 높아지기 때문에', answer: true },
+                    { text: '지구가 태양과 가까워지기 때문에', answer: false },
+                    { text: '겨울잠 자던 동물들이 깨어나서', answer: false },
+                    { text: '두꺼운 옷을 벗어서', answer: false },
+                ],
+                feedbackCorrect: '정답이야! 태양의 고도가 높아지면 같은 양의 햇빛이 더 좁은 면적을 비춰서 기온이 올라가.'
+            },
+            {
+                season: 'summer',
+                icon: '☀️',
+                title: '여름: 뜨거운 태양의 계절',
+                story: '태양이 가장 높이 뜨는 계절, 여름이야. 낮이 일년 중 가장 길고, 짙은 녹음과 함께 땀이 송골송골 맺히는구나.',
+                question: '여름철, 태양의 남중 고도가 가장 높을 때 그림자의 길이는 어떻게 될까?',
+                options: [
+                    { text: '가장 길어진다', answer: false },
+                    { text: '가장 짧아진다', answer: true },
+                    { text: '사라진다', answer: false },
+                    { text: '계절과 상관없다', answer: false },
+                ],
+                feedbackCorrect: '맞았어! 태양이 머리 꼭대기 근처에 있을수록 그림자는 짧아지지.'
+            },
+            {
+                season: 'autumn',
+                icon: '🍂',
+                title: '가을: 풍요로운 결실의 계절',
+                story: '하늘은 높고 공기는 선선해졌어. 나무들은 울긋불긋 옷을 갈아입고, 동물들은 겨울을 준비하기 시작했어.',
+                question: '가을이 되면 낮의 길이와 기온은 어떻게 변할까?',
+                options: [
+                    { text: '낮이 길어지고 기온이 올라간다', answer: false },
+                    { text: '낮이 짧아지고 기온이 올라간다', answer: false },
+                    { text: '낮이 짧아지고 기온이 내려간다', answer: true },
+                    { text: '낮이 길어지고 기온이 내려간다', answer: false },
+                ],
+                feedbackCorrect: '훌륭해! 가을은 태양의 고도가 점점 낮아지면서 낮이 짧아지고 기온도 서늘해져.'
+            },
+            {
+                season: 'winter',
+                icon: '❄️',
+                title: '겨울: 하얀 눈의 계절',
+                story: '찬 바람이 불고 세상이 하얗게 변했어. 낮은 일년 중 가장 짧고, 태양은 낮게 떠서 따스함을 느끼기 어려워.',
+                question: '겨울이 다른 계절보다 추운 근본적인 이유는 무엇일까?',
+                options: [
+                    { text: '태양의 남중 고도가 낮고 낮의 길이가 짧기 때문', answer: true },
+                    { text: '지구가 태양에서 가장 멀리 떨어져 있기 때문', answer: false },
+                    { text: '눈이 내려서 세상을 차갑게 만들기 때문', answer: false },
+                    { text: '난방을 하지 않아서', answer: false },
+                ],
+                feedbackCorrect: '정확해! 태양의 고도가 낮아 햇빛이 비스듬히 비추고, 낮의 길이도 짧아 열을 적게 받기 때문이야.'
+            },
+            {
+                season: 'experiment',
+                icon: '📏',
+                title: '실험의 조건 (변인 통제)',
+                story: '잠깐, 실험을 시작하기 전에 중요한 점을 먼저 알아보자! 정확한 결과를 얻으려면, 우리가 바꾸려는 조건(전등 각도) 외에 다른 조건들은 모두 똑같이 유지해야 해. 이것을 "변인 통제"라고 부른단다.',
+                question: '우리가 할 실험에서 다르게 해야 할 조건은 "전등의 각도"야. 그렇다면 반드시 같게 유지해야 하는 조건은 무엇일까?',
+                options: [
+                    { text: '소리발생기의 소리 크기', answer: false },
+                    { text: '전등과 태양전지판 사이의 거리', answer: true },
+                    { text: '실험하는 시간', answer: false },
+                    { text: '전등의 각도', answer: false },
+                ],
+                feedbackCorrect: '맞아! 전등의 각도에 따른 효과만 정확히 보려면, 전등의 밝기나 거리 같은 다른 조건들은 변하지 않도록 똑같이 맞춰줘야 해. 훌륭한 과학자인데?'
+            },
+            {
+                season: 'experiment',
+                icon: '🔬',
+                title: '실험 시간: 태양 고도와 에너지',
+                story: '좋아, 변인 통제에 대해 잘 배웠으니 이제 본격적으로 실험을 시작해보자. 태양전지판에 소리발생기를 연결했어. 태양전지판이 받는 에너지가 클수록 더 큰 소리가 날 거야.',
+                question: '전등을 수직으로 비출 때(여름)와 비스듬히 비출 때(겨울) 중, 언제 소리발생기의 소리가 더 클까?',
+                options: [
+                    { text: '비스듬히 비출 때', answer: false },
+                    { text: '수직으로 비출 때', answer: true },
+                    { text: '각도와 상관없이 같다', answer: false },
+                    { text: '소리가 나지 않는다', answer: false },
+                ],
+                feedbackCorrect: '딩동댕! 태양 고도가 높을수록(수직) 같은 면적에 더 많은 태양 에너지가 집중돼. 그래서 태양전지판이 강한 에너지를 받아 큰 소리를 내는 거야!'
+            },
+            {
+                season: 'final',
+                icon: '🌍',
+                title: '최종 임무: 계절 변화의 핵심 원리',
+                story: '봄, 여름, 가을, 겨울을 모두 탐험했구나! 넌 훌륭한 계절 탐험가야. 마지막으로 이 모든 계절 변화가 일어나는 가장 중요한 이유를 맞춰봐!',
+                question: '지구에 계절 변화가 나타나는 가장 근본적인 원인은 무엇일까?',
+                options: [
+                    { text: '지구의 자전 속도가 변해서', answer: false },
+                    { text: '태양과의 거리가 가까워졌다 멀어졌다 해서', answer: false },
+                    { text: '지구가 자전축이 기울어진 채 태양 주위를 공전하기 때문', answer: true },
+                    { text: '달이 지구 주위를 공전하기 때문', answer: false },
+                ],
+                feedbackCorrect: '완벽해! 바로 그거야! 지구의 기울어진 자전축이 계절 변화의 모든 비밀을 푸는 열쇠였어!'
+            },
+            {
+                season: 'end',
+                icon: '🏆',
+                title: '탐험 완료!',
+                story: '축하해! 너는 이제 계절의 변화 원리를 완벽하게 이해하는 최고의 계절 탐험가가 되었어. 앞으로도 우리 주변의 자연 현상에 계속 관심을 가져줘!',
+                question: '다시 탐험을 시작할까?',
+                options: [{ text: '처음부터 다시 시작하기', answer: true }],
+                feedbackCorrect: '좋아! 새로운 탐험을 시작하자!'
+            }
+        ];
+
+        let currentStage = 0;
+
+        const gameContainer = document.getElementById('game-container');
+        const cardEl = document.getElementById('game-card');
+        const iconEl = document.getElementById('character-icon');
+        const titleEl = document.getElementById('title');
+        const storyEl = document.getElementById('story');
+        const questionEl = document.getElementById('question');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackEl = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+
+        function loadStage(stageIndex) {
+            const stage = gameData[stageIndex];
+
+            // 배경 업데이트
+            gameContainer.className = `min-h-screen w-full flex items-center justify-center p-4 transition-colors duration-1000 season-${stage.season}`;
+            
+            iconEl.textContent = stage.icon;
+            titleEl.textContent = stage.title;
+            storyEl.textContent = stage.story;
+            questionEl.textContent = stage.question;
+
+            optionsContainer.innerHTML = '';
+            feedbackEl.textContent = '';
+            feedbackEl.classList.remove('text-green-600', 'text-red-600');
+            nextBtn.classList.add('hidden');
+
+            stage.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-btn', 'w-full', 'bg-white', 'text-gray-700', 'font-semibold', 'py-3', 'px-4', 'rounded-lg', 'shadow-md', 'border', 'border-gray-200');
+                button.onclick = () => handleOptionClick(option.answer, button);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function handleOptionClick(isCorrect, button) {
+            // 모든 버튼 비활성화
+            Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);
+            
+            const stage = gameData[currentStage];
+
+            if (isCorrect) {
+                feedbackEl.textContent = stage.feedbackCorrect;
+                feedbackEl.classList.add('text-green-600');
+                button.classList.add('correct');
+                
+                if (currentStage < gameData.length - 1) {
+                    nextBtn.classList.remove('hidden');
+                } else {
+                    // 마지막 스테이지(다시 시작)
+                    setTimeout(() => {
+                        currentStage = 0;
+                        loadStage(currentStage);
+                    }, 2000);
+                }
+            } else {
+                feedbackEl.textContent = '음.. 다시 한번 생각해볼까?';
+                feedbackEl.classList.add('text-red-600');
+                button.classList.add('incorrect');
+                // 1초 후 버튼 다시 활성화
+                setTimeout(() => {
+                    Array.from(optionsContainer.children).forEach(btn => btn.disabled = false);
+                    button.classList.remove('incorrect');
+                    feedbackEl.textContent = '';
+                }, 1000);
+            }
+        }
+        
+        nextBtn.addEventListener('click', () => {
+             if (gameData[currentStage].season === 'end') {
+                currentStage = 0;
+            } else {
+                currentStage++;
+            }
+            loadStage(currentStage);
+        });
+
+        // 게임 시작
+        window.onload = () => loadStage(currentStage);
+    </script>
+</body>
+</html>
+
+
+
+
