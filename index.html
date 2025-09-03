@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>계절의 변화 탐험 게임</title>
+    <title>계절의 변화 탐험 게임 (심화 학습편)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -11,275 +11,345 @@
             font-family: 'Noto Sans KR', sans-serif;
             touch-action: manipulation;
         }
-        .season-spring { background: linear-gradient(to bottom, #a8e063, #56ab2f); }
-        .season-summer { background: linear-gradient(to bottom, #f8b500, #fceabb); }
-        .season-autumn { background: linear-gradient(to bottom, #e67e22, #f39c12); }
-        .season-winter { background: linear-gradient(to bottom, #00c6ff, #0072ff); }
-        .season-experiment { background: linear-gradient(to bottom, #d7d2cc, #304352); }
-        .season-final { background: linear-gradient(to bottom, #8e44ad, #9b59b6); }
-        .game-card {
+        .game-bg { 
+            background: linear-gradient(to bottom, #87CEEB, #F0E68C);
+            transition: background 1s ease;
+        }
+        .game-card, .form-card, .results-card {
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            background-color: rgba(255, 255, 255, 0.7);
+            background-color: rgba(255, 255, 255, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .option-btn {
+        .option-btn { transition: all 0.3s ease; }
+        .option-btn:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .option-btn.correct { background-color: #2ecc71; color: white; transform: scale(1.05); }
+        .option-btn.incorrect { background-color: #e74c3c; color: white; }
+        .option-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .achievement-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            color: white;
             transition: all 0.3s ease;
         }
-        .option-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .option-btn.correct {
-            animation: correct-pulse 0.5s ease;
-        }
-        .option-btn.incorrect {
-            animation: incorrect-shake 0.5s ease;
-        }
-        @keyframes correct-pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); background-color: #2ecc71; color: white;}
-            100% { transform: scale(1); }
-        }
-        @keyframes incorrect-shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); }
-            40%, 80% { transform: translateX(5px); }
+        .badge-earned { background-color: #f39c12; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .badge-not-earned { background-color: #bdc3c7; }
+        #tip-modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
     </style>
 </head>
-<body class="transition-colors duration-1000">
+<body class="game-bg">
 
-    <div id="game-container" class="min-h-screen w-full flex items-center justify-center p-4">
-        <div id="game-card" class="game-card w-full max-w-2xl rounded-2xl p-6 md:p-10 shadow-lg text-center">
-            
-            <!-- 캐릭터 아이콘 -->
-            <div id="character-icon" class="text-6xl mb-4">🌍</div>
-            
-            <!-- 게임 내용 -->
-            <h1 id="title" class="text-2xl md:text-3xl font-bold text-gray-800 mb-2"></h1>
-            <p id="story" class="text-gray-600 mb-6 text-base md:text-lg"></p>
-            <h2 id="question" class="text-xl md:text-2xl font-bold text-gray-800 mb-6"></h2>
-
-            <!-- 선택지 버튼 -->
-            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            </div>
-
-            <!-- 피드백 메시지 -->
-            <p id="feedback" class="mt-6 text-lg font-semibold h-8"></p>
-
-            <!-- 다음 단계 버튼 -->
-            <button id="next-btn" class="hidden mt-8 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-transform duration-200 hover:scale-105">
-                다음으로
+    <!-- 시작 화면 -->
+    <div id="start-screen" class="min-h-screen w-full flex items-center justify-center p-4">
+        <div class="form-card w-full max-w-md rounded-2xl p-8 shadow-lg text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">계절의 변화 탐험</h1>
+            <p class="text-gray-600 mb-6">성취기준을 확인하며 계절의 원리를 배워보세요!</p>
+            <button id="start-game-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-transform duration-200 hover:scale-105">
+                탐험 시작하기
             </button>
         </div>
     </div>
 
+    <!-- 게임 화면 -->
+    <div id="game-screen" class="hidden min-h-screen w-full flex items-center justify-center p-4 relative">
+        <div class="game-card w-full max-w-3xl rounded-2xl p-6 md:p-8 shadow-lg text-center">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex gap-3">
+                    <span class="text-3xl cursor-pointer" onclick="showSeasonInfo('spring')">🌱</span>
+                    <span class="text-3xl cursor-pointer" onclick="showSeasonInfo('summer')">☀️</span>
+                    <span class="text-3xl cursor-pointer" onclick="showSeasonInfo('autumn')">🍂</span>
+                    <span class="text-3xl cursor-pointer" onclick="showSeasonInfo('winter')">❄️</span>
+                </div>
+                <div id="progress" class="font-bold text-gray-700"></div>
+                <div id="earth-icon" class="text-5xl cursor-pointer transition-transform duration-300 hover:scale-110" onclick="showTip()">🌍</div>
+            </div>
+            
+            <p id="achievement-standard" class="text-sm font-bold text-indigo-600 mb-2"></p>
+            <h2 id="question" class="text-xl md:text-2xl font-bold text-gray-800 mb-6 min-h-[6rem] flex items-center justify-center"></h2>
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <p id="explanation" class="mt-4 text-gray-700 bg-indigo-100 p-3 rounded-lg min-h-[5rem] flex items-center justify-center"></p>
+            <button id="next-btn" class="hidden mt-6 w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700">다음 문제</button>
+        </div>
+        <!-- 팁 모달 -->
+        <div id="tip-modal" class="hidden absolute top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center p-4 opacity-0 -translate-y-4">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-md text-center">
+                <h3 class="text-xl font-bold mb-2">핵심 팁! 💡</h3>
+                <p id="tip-content"></p>
+                <button onclick="closeTip()" class="mt-4 bg-gray-300 px-4 py-2 rounded-lg">닫기</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 결과 화면 -->
+    <div id="results-screen" class="hidden min-h-screen w-full flex items-center justify-center p-4">
+        <div class="results-card w-full max-w-2xl rounded-2xl p-8 shadow-lg text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">탐험 결과 보고서</h1>
+            <div id="achievements-container" class="space-y-4 my-6"></div>
+            <p id="result-message" class="font-bold text-xl my-4"></p>
+            <button id="restart-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700">처음부터 다시하기</button>
+        </div>
+    </div>
+
     <script>
-        const gameData = [
-            {
-                season: 'intro',
-                icon: '🧑‍🔬',
-                title: '계절 탐험대에 온 것을 환영해!',
-                story: '나는 계절의 비밀을 연구하는 탐험가란다. 너도 오늘부터 나와 함께 지구의 아름다운 사계절을 탐험하며 그 원리를 밝혀보지 않을래?',
-                question: '탐험을 시작할 준비가 되었니?',
-                options: [{ text: '네, 준비됐어요!', answer: true }],
-                feedbackCorrect: '좋아! 그럼 봄부터 시작해보자!'
-            },
-            {
-                season: 'spring',
-                icon: '🌱',
-                title: '봄: 생명이 깨어나는 계절',
-                story: '따스한 햇살과 함께 얼었던 땅이 녹고 새싹이 돋아나고 있어. 낮의 길이가 점점 길어지고 기온도 올라가기 시작했어.',
-                question: '봄에 낮의 길이가 길어지고 따뜻해지는 이유는 무엇일까?',
-                options: [
-                    { text: '태양의 고도가 점점 높아지기 때문에', answer: true },
-                    { text: '지구가 태양과 가까워지기 때문에', answer: false },
-                    { text: '겨울잠 자던 동물들이 깨어나서', answer: false },
-                    { text: '두꺼운 옷을 벗어서', answer: false },
-                ],
-                feedbackCorrect: '정답이야! 태양의 고도가 높아지면 같은 양의 햇빛이 더 좁은 면적을 비춰서 기온이 올라가.'
-            },
-            {
-                season: 'summer',
-                icon: '☀️',
-                title: '여름: 뜨거운 태양의 계절',
-                story: '태양이 가장 높이 뜨는 계절, 여름이야. 낮이 일년 중 가장 길고, 짙은 녹음과 함께 땀이 송골송골 맺히는구나.',
-                question: '여름철, 태양의 남중 고도가 가장 높을 때 그림자의 길이는 어떻게 될까?',
-                options: [
-                    { text: '가장 길어진다', answer: false },
-                    { text: '가장 짧아진다', answer: true },
-                    { text: '사라진다', answer: false },
-                    { text: '계절과 상관없다', answer: false },
-                ],
-                feedbackCorrect: '맞았어! 태양이 머리 꼭대기 근처에 있을수록 그림자는 짧아지지.'
-            },
-            {
-                season: 'autumn',
-                icon: '🍂',
-                title: '가을: 풍요로운 결실의 계절',
-                story: '하늘은 높고 공기는 선선해졌어. 나무들은 울긋불긋 옷을 갈아입고, 동물들은 겨울을 준비하기 시작했어.',
-                question: '가을이 되면 낮의 길이와 기온은 어떻게 변할까?',
-                options: [
-                    { text: '낮이 길어지고 기온이 올라간다', answer: false },
-                    { text: '낮이 짧아지고 기온이 올라간다', answer: false },
-                    { text: '낮이 짧아지고 기온이 내려간다', answer: true },
-                    { text: '낮이 길어지고 기온이 내려간다', answer: false },
-                ],
-                feedbackCorrect: '훌륭해! 가을은 태양의 고도가 점점 낮아지면서 낮이 짧아지고 기온도 서늘해져.'
-            },
-            {
-                season: 'winter',
-                icon: '❄️',
-                title: '겨울: 하얀 눈의 계절',
-                story: '찬 바람이 불고 세상이 하얗게 변했어. 낮은 일년 중 가장 짧고, 태양은 낮게 떠서 따스함을 느끼기 어려워.',
-                question: '겨울이 다른 계절보다 추운 근본적인 이유는 무엇일까?',
-                options: [
-                    { text: '태양의 남중 고도가 낮고 낮의 길이가 짧기 때문', answer: true },
-                    { text: '지구가 태양에서 가장 멀리 떨어져 있기 때문', answer: false },
-                    { text: '눈이 내려서 세상을 차갑게 만들기 때문', answer: false },
-                    { text: '난방을 하지 않아서', answer: false },
-                ],
-                feedbackCorrect: '정확해! 태양의 고도가 낮아 햇빛이 비스듬히 비추고, 낮의 길이도 짧아 열을 적게 받기 때문이야.'
-            },
-            {
-                season: 'experiment',
-                icon: '📏',
-                title: '실험의 조건 (변인 통제)',
-                story: '잠깐, 실험을 시작하기 전에 중요한 점을 먼저 알아보자! 정확한 결과를 얻으려면, 우리가 바꾸려는 조건(전등 각도) 외에 다른 조건들은 모두 똑같이 유지해야 해. 이것을 "변인 통제"라고 부른단다.',
-                question: '우리가 할 실험에서 다르게 해야 할 조건은 "전등의 각도"야. 그렇다면 반드시 같게 유지해야 하는 조건은 무엇일까?',
-                options: [
-                    { text: '소리발생기의 소리 크기', answer: false },
-                    { text: '전등과 태양전지판 사이의 거리', answer: true },
-                    { text: '실험하는 시간', answer: false },
-                    { text: '전등의 각도', answer: false },
-                ],
-                feedbackCorrect: '맞아! 전등의 각도에 따른 효과만 정확히 보려면, 전등의 밝기나 거리 같은 다른 조건들은 변하지 않도록 똑같이 맞춰줘야 해. 훌륭한 과학자인데?'
-            },
-            {
-                season: 'experiment',
-                icon: '🔬',
-                title: '실험 시간: 태양 고도와 에너지',
-                story: '좋아, 변인 통제에 대해 잘 배웠으니 이제 본격적으로 실험을 시작해보자. 태양전지판에 소리발생기를 연결했어. 태양전지판이 받는 에너지가 클수록 더 큰 소리가 날 거야.',
-                question: '전등을 수직으로 비출 때(여름)와 비스듬히 비출 때(겨울) 중, 언제 소리발생기의 소리가 더 클까?',
-                options: [
-                    { text: '비스듬히 비출 때', answer: false },
-                    { text: '수직으로 비출 때', answer: true },
-                    { text: '각도와 상관없이 같다', answer: false },
-                    { text: '소리가 나지 않는다', answer: false },
-                ],
-                feedbackCorrect: '딩동댕! 태양 고도가 높을수록(수직) 같은 면적에 더 많은 태양 에너지가 집중돼. 그래서 태양전지판이 강한 에너지를 받아 큰 소리를 내는 거야!'
-            },
-            {
-                season: 'final',
-                icon: '🌍',
-                title: '최종 임무: 계절 변화의 핵심 원리',
-                story: '봄, 여름, 가을, 겨울을 모두 탐험했구나! 넌 훌륭한 계절 탐험가야. 마지막으로 이 모든 계절 변화가 일어나는 가장 중요한 이유를 맞춰봐!',
-                question: '지구에 계절 변화가 나타나는 가장 근본적인 원인은 무엇일까?',
-                options: [
-                    { text: '지구의 자전 속도가 변해서', answer: false },
-                    { text: '태양과의 거리가 가까워졌다 멀어졌다 해서', answer: false },
-                    { text: '지구가 자전축이 기울어진 채 태양 주위를 공전하기 때문', answer: true },
-                    { text: '달이 지구 주위를 공전하기 때문', answer: false },
-                ],
-                feedbackCorrect: '완벽해! 바로 그거야! 지구의 기울어진 자전축이 계절 변화의 모든 비밀을 푸는 열쇠였어!'
-            },
-            {
-                season: 'end',
-                icon: '🏆',
-                title: '탐험 완료!',
-                story: '축하해! 너는 이제 계절의 변화 원리를 완벽하게 이해하는 최고의 계절 탐험가가 되었어. 앞으로도 우리 주변의 자연 현상에 계속 관심을 가져줘!',
-                question: '다시 탐험을 시작할까?',
-                options: [{ text: '처음부터 다시 시작하기', answer: true }],
-                feedbackCorrect: '좋아! 새로운 탐험을 시작하자!'
-            }
+        // --- 1. 질문 데이터베이스 (성취기준별 구성) ---
+        const allQuestions = [
+            // [6과14-01] 하루 동안 태양 고도, 그림자 길이, 기온의 관계 (4문제)
+            { standard: "6-14-01", question: "하루 중 태양의 고도가 가장 높은 시각은 언제인가요?", options: ["오전 9시", "정오(낮 12시)", "오후 3시", "해질녘"], answer: 1, explanation: "태양은 정오(낮 12시경)에 가장 높이 뜹니다. 이를 '남중'한다고 하며, 이때 태양의 고도를 '남중 고도'라고 합니다." },
+            { standard: "6-14-01", question: "태양의 고도가 높아질수록 막대 그림자의 길이는 어떻게 변하나요?", options: ["길어진다", "짧아진다", "변화 없다", "사라진다"], answer: 1, explanation: "태양이 높이 뜰수록(고도가 높을수록) 빛이 수직에 가깝게 비추기 때문에 그림자의 길이는 짧아집니다." },
+            { standard: "6-14-01", question: "하루 중 기온이 가장 높은 시각이 정오가 아닌 오후 2~3시인 이유는 무엇일까요?", options: ["사람들이 가장 활발하게 활동해서", "태양열이 땅을 데우는 데 시간이 걸려서", "바람이 가장 약하게 불어서", "정오에는 구름이 많아서"], answer: 1, explanation: "태양은 정오에 가장 높지만, 태양 에너지로 데워진 땅이 공기를 데우는 데 시간이 걸리기 때문에 기온은 보통 오후 2~3시경에 가장 높습니다." },
+            { standard: "6-14-01", question: "하루 중 기온이 가장 낮게 측정되는 때는 보통 언제인가요?", options: ["해가 진 직후", "자정(밤 12시)", "해가 뜨기 직전", "해가 뜬 직후"], answer: 2, explanation: "밤새 지표면이 계속 식기 때문에, 태양이 다시 떠서 땅을 데우기 시작하기 직전인 '해가 뜨기 직전'이 하루 중 기온이 가장 낮습니다." },
+            // [6과14-02] 계절에 따른 태양의 남중 고도, 낮과 밤의 길이, 기온 변화 (6문제)
+            { standard: "6-14-02", question: "우리나라에서 1년 중 태양의 남중 고도가 가장 높은 계절은 언제인가요?", options: ["봄", "여름", "가을", "겨울"], answer: 1, explanation: "여름(하지 무렵)에 태양의 남중 고도가 가장 높습니다. 그래서 햇빛이 강하게 내리쬐어 덥습니다." },
+            { standard: "6-14-02", question: "1년 중 낮의 길이가 가장 길고 밤의 길이가 가장 짧은 날은 언제인가요?", options: ["춘분", "하지", "추분", "동지"], answer: 1, explanation: "하지는 북반구에서 태양의 남중 고도가 가장 높고, 낮의 길이가 가장 긴 날입니다." },
+            { standard: "6-14-02", question: "겨울이 여름보다 추운 가장 중요한 이유는 무엇인가요?", options: ["지구가 태양에서 멀어져서", "눈이 많이 와서", "태양의 남중 고도가 낮고 낮이 짧아서", "겨울잠 자는 동물이 많아서"], answer: 2, explanation: "겨울에는 태양의 남중 고도가 낮아 햇빛이 비스듬히 비추고, 낮의 길이도 짧아 태양 에너지를 적게 받기 때문에 기온이 낮습니다." },
+            { standard: "6-14-02", question: "1년 중 낮과 밤의 길이가 거의 같은 날은 언제인가요?", options: ["하지와 동지", "입춘과 입동", "춘분과 추분", "소한과 대한"], answer: 2, explanation: "춘분과 추분에는 태양이 적도 바로 위를 비추기 때문에 전 세계적으로 낮과 밤의 길이가 거의 같습니다." },
+            { standard: "6-14-02", question: "태양의 남중 고도는 어느 쪽 하늘에서 측정해야 할까요?", options: ["동쪽", "서쪽", "남쪽", "북쪽"], answer: 2, explanation: "우리나라(북반구)에서는 태양이 항상 동쪽에서 떠서 남쪽 하늘을 지나 서쪽으로 지기 때문에, 가장 높이 떴을 때(남중)는 남쪽 하늘에 있습니다." },
+            { standard: "6-14-02", question: "봄에서 여름으로 갈수록 낮의 길이는 어떻게 변하나요?", options: ["점점 길어진다", "점점 짧아진다", "변화 없다", "길어졌다 짧아진다"], answer: 0, explanation: "봄(춘분)을 지나 여름(하지)으로 갈수록 태양의 남중 고도가 높아지면서 낮의 길이가 점점 길어집니다." },
+            // [6과14-03] 지구 자전축 기울기와 공전으로 인한 계절 변화 (5문제)
+            { standard: "6-14-03", question: "지구에 계절이 변화하는 가장 근본적인 원인은 무엇인가요?", options: ["지구의 자전 속도 변화", "지구와 태양 사이의 거리 변화", "자전축이 기울어진 채 태양 주위를 공전", "달의 인력 변화"], answer: 2, explanation: "지구의 자전축이 약 23.5도 기울어진 상태로 태양 주위를 공전하기 때문에, 태양빛을 받는 각도와 양이 달라져 계절이 변화합니다." },
+            { standard: "6-14-03", question: "만약 지구의 자전축이 기울어지지 않았다면 어떻게 될까요?", options: ["계절의 변화가 없어진다", "1년이 더 길어진다", "낮과 밤이 없어진다", "지구가 멈춘다"], answer: 0, explanation: "자전축이 기울어지지 않으면 1년 내내 태양의 남중 고도가 같게 되어 계절의 변화가 거의 사라질 것입니다." },
+            { standard: "6-14-03", question: "손전등을 비스듬히 비출 때보다 수직으로 비출 때 더 밝고 따뜻한 이유는 무엇인가요?", options: ["빛의 양이 더 많아져서", "같은 면적에 에너지가 집중되어서", "빛의 속도가 더 빨라져서", "빛의 색깔이 변해서"], answer: 1, explanation: "빛을 수직으로 비추면 좁은 면적에 에너지가 집중되지만, 비스듬히 비추면 넓은 면적에 에너지가 분산됩니다. 이것이 여름과 겨울의 기온 차이 원리입니다." },
+            { standard: "6-14-03", question: "우리나라가 무더운 여름일 때, 남반구에 있는 호주는 어떤 계절일까요?", options: ["똑같이 여름", "봄", "가을", "겨울"], answer: 3, explanation: "지구 자전축이 기울어져 있어 북반구가 태양 쪽으로 기울면 여름, 남반구는 태양 반대쪽으로 기울어 겨울이 됩니다. 계절이 서로 반대입니다." },
+            { standard: "6-14-03", question: "계절 변화의 원인과 관련하여, 지구의 '공전'이란 무엇을 의미하나요?", options: ["스스로 한 바퀴 도는 것", "태양 주위를 한 바퀴 도는 것", "달 주위를 한 바퀴 도는 것", "가만히 멈춰 있는 것"], answer: 1, explanation: "공전은 한 천체가 다른 천체의 주위를 도는 것을 말합니다. 지구는 태양 주위를 약 365일에 걸쳐 한 바퀴 공전합니다." },
+            // 종합 문제: 실생활 적용 문제 (3문제)
+            { standard: "comprehensive", question: "농부들이 계절의 변화를 알아야 하는 가장 중요한 이유는 무엇일까요?", options: ["휴가 계획을 세우기 위해", "날씨에 맞는 옷을 입기 위해", "농작물을 심고 거둘 때를 정하기 위해", "계절 축제를 즐기기 위해"], answer: 2, explanation: "농작물마다 자라기 좋은 온도와 햇빛의 양이 다르기 때문에, 농부들은 계절 변화에 맞춰 파종하고 수확할 시기를 결정해야 합니다." },
+            { standard: "comprehensive", question: "우리나라의 태양광 발전기는 주로 어느 방향으로, 왜 비스듬히 설치할까요?", options: ["북쪽, 눈이 쌓이지 않게", "동쪽, 해가 뜰 때 에너지를 받게", "남쪽, 햇빛을 가장 오래 받게", "서쪽, 해가 질 때 에너지를 받게"], answer: 2, explanation: "태양은 주로 남쪽 하늘을 지나가므로, 남쪽으로 설치해야 햇빛을 가장 오래, 많이 받을 수 있습니다. 계절별 태양 고도를 고려해 비스듬히 설치하여 효율을 높입니다." },
+            { standard: "comprehensive", question: "1월에 남반구 아르헨티나로 여행을 간다면 어떤 옷을 챙겨야 할까요?", options: ["두꺼운 겨울옷", "시원한 여름옷", "따뜻한 봄가을 옷", "방수 기능이 있는 옷"], answer: 1, explanation: "1월은 북반구에서는 겨울이지만, 남반구에서는 계절이 반대이므로 여름입니다. 따라서 시원한 여름옷을 챙겨야 합니다." },
         ];
 
-        let currentStage = 0;
+        // --- 2. 게임 상태 관리 변수 ---
+        let shuffledQuestions = [];
+        let currentQuestionIndex = 0;
+        const achievements = {
+            '6-14-01': { name: "하루 동안의 변화", correct: 0, total: 4, badge: false },
+            '6-14-02': { name: "계절에 따른 변화", correct: 0, total: 6, badge: false },
+            '6-14-03': { name: "계절 변화의 원인", correct: 0, total: 5, badge: false },
+            'comprehensive': { name: "실생활 종합 응용", correct: 0, total: 3, badge: false },
+        };
 
-        const gameContainer = document.getElementById('game-container');
-        const cardEl = document.getElementById('game-card');
-        const iconEl = document.getElementById('character-icon');
-        const titleEl = document.getElementById('title');
-        const storyEl = document.getElementById('story');
+        // --- 3. HTML 요소 가져오기 ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const progressEl = document.getElementById('progress');
+        const standardEl = document.getElementById('achievement-standard');
         const questionEl = document.getElementById('question');
         const optionsContainer = document.getElementById('options-container');
-        const feedbackEl = document.getElementById('feedback');
+        const explanationEl = document.getElementById('explanation');
         const nextBtn = document.getElementById('next-btn');
 
-        function loadStage(stageIndex) {
-            const stage = gameData[stageIndex];
+        // --- 4. 게임 핵심 기능 함수 ---
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
 
-            // 배경 업데이트
-            gameContainer.className = `min-h-screen w-full flex items-center justify-center p-4 transition-colors duration-1000 season-${stage.season}`;
-            
-            iconEl.textContent = stage.icon;
-            titleEl.textContent = stage.title;
-            storyEl.textContent = stage.story;
-            questionEl.textContent = stage.question;
-
-            optionsContainer.innerHTML = '';
-            feedbackEl.textContent = '';
-            feedbackEl.classList.remove('text-green-600', 'text-red-600');
+        function startGame() {
+            currentQuestionIndex = 0;
+            for (const key in achievements) {
+                achievements[key].correct = 0;
+                achievements[key].badge = false;
+            }
+            shuffledQuestions = shuffleArray([...allQuestions]);
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            loadQuestion();
+        }
+        
+        function loadQuestion() {
+            explanationEl.textContent = "";
+            explanationEl.classList.add('hidden');
             nextBtn.classList.add('hidden');
 
-            stage.options.forEach(option => {
+            const questionData = shuffledQuestions[currentQuestionIndex];
+            const standardKey = questionData.standard;
+
+            progressEl.textContent = `문제 ${currentQuestionIndex + 1} / ${shuffledQuestions.length}`;
+            standardEl.textContent = `[${achievements[standardKey].name}]`;
+            questionEl.textContent = questionData.question;
+
+            optionsContainer.innerHTML = '';
+            questionData.options.forEach((option, index) => {
                 const button = document.createElement('button');
-                button.textContent = option.text;
+                button.textContent = option;
                 button.classList.add('option-btn', 'w-full', 'bg-white', 'text-gray-700', 'font-semibold', 'py-3', 'px-4', 'rounded-lg', 'shadow-md', 'border', 'border-gray-200');
-                button.onclick = () => handleOptionClick(option.answer, button);
+                button.onclick = () => handleOptionClick(index);
                 optionsContainer.appendChild(button);
             });
         }
 
-        function handleOptionClick(isCorrect, button) {
-            // 모든 버튼 비활성화
-            Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);
+        function handleOptionClick(selectedIndex) {
+            const questionData = shuffledQuestions[currentQuestionIndex];
+            const isCorrect = (selectedIndex === questionData.answer);
             
-            const stage = gameData[currentStage];
+            Array.from(optionsContainer.children).forEach((btn, index) => {
+                btn.disabled = true;
+                if (index === questionData.answer) {
+                    btn.classList.add('correct');
+                } else if (index === selectedIndex) {
+                    btn.classList.add('incorrect');
+                }
+            });
 
             if (isCorrect) {
-                feedbackEl.textContent = stage.feedbackCorrect;
-                feedbackEl.classList.add('text-green-600');
-                button.classList.add('correct');
-                
-                if (currentStage < gameData.length - 1) {
-                    nextBtn.classList.remove('hidden');
-                } else {
-                    // 마지막 스테이지(다시 시작)
-                    setTimeout(() => {
-                        currentStage = 0;
-                        loadStage(currentStage);
-                    }, 2000);
-                }
-            } else {
-                feedbackEl.textContent = '음.. 다시 한번 생각해볼까?';
-                feedbackEl.classList.add('text-red-600');
-                button.classList.add('incorrect');
-                // 1초 후 버튼 다시 활성화
-                setTimeout(() => {
-                    Array.from(optionsContainer.children).forEach(btn => btn.disabled = false);
-                    button.classList.remove('incorrect');
-                    feedbackEl.textContent = '';
-                }, 1000);
+                achievements[questionData.standard].correct++;
+            }
+            
+            explanationEl.textContent = "해설: " + questionData.explanation;
+            explanationEl.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+
+            if (currentQuestionIndex >= shuffledQuestions.length - 1) {
+                nextBtn.textContent = '결과 확인하기';
             }
         }
         
-        nextBtn.addEventListener('click', () => {
-             if (gameData[currentStage].season === 'end') {
-                currentStage = 0;
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < shuffledQuestions.length) {
+                loadQuestion();
             } else {
-                currentStage++;
+                showResults();
             }
-            loadStage(currentStage);
+        }
+        
+        function showResults() {
+            gameScreen.classList.add('hidden');
+            resultsScreen.classList.remove('hidden');
+            
+            const achievementsContainer = document.getElementById('achievements-container');
+            achievementsContainer.innerHTML = '';
+            let totalCorrect = 0;
+            
+            for (const key in achievements) {
+                const achievement = achievements[key];
+                const percentage = (achievement.correct / achievement.total) * 100;
+                totalCorrect += achievement.correct;
+                
+                if (percentage >= 70) {
+                    achievement.badge = true;
+                }
+
+                const resultEl = document.createElement('div');
+                resultEl.className = 'p-4 bg-gray-100 rounded-lg text-left';
+
+                let extraInfoHTML = '';
+                if (achievement.badge) {
+                    const compliments = ["이해도가 완벽해요!", "정말 훌륭해요!", "핵심을 정확히 알고 있네요!"];
+                    const compliment = compliments[Math.floor(Math.random() * compliments.length)];
+                    extraInfoHTML = `<p class="text-sm text-green-600 mt-2 font-semibold">🌟 ${compliment}</p>`;
+                } else {
+                    extraInfoHTML = `<p class="text-sm text-indigo-700 mt-2">💡 <strong>학습 팁:</strong> ${tips[key]}</p>`;
+                }
+
+                resultEl.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-gray-800">${achievement.name}</p>
+                            <p class="text-sm text-gray-600">달성도: ${achievement.correct} / ${achievement.total} (${percentage.toFixed(0)}%)</p>
+                        </div>
+                        <span class="achievement-badge ${achievement.badge ? 'badge-earned' : 'badge-not-earned'}">
+                            ${achievement.badge ? '🏅 달성' : '미달성'}
+                        </span>
+                    </div>
+                    ${extraInfoHTML}
+                `;
+                achievementsContainer.appendChild(resultEl);
+            }
+            
+            const totalPercentage = (totalCorrect / allQuestions.length) * 100;
+            const resultMessage = document.getElementById('result-message');
+            if (totalPercentage >= 80) {
+                resultMessage.textContent = "훌륭해요! 당신은 최고의 계절 탐험가입니다! 🏆";
+                resultMessage.className = "font-bold text-xl my-4 text-green-600";
+            } else {
+                resultMessage.textContent = "조금 아쉽네요! 다시 도전해서 모든 배지를 모아보세요!";
+                resultMessage.className = "font-bold text-xl my-4 text-orange-500";
+            }
+            
+            saveResultToSheet();
+        }
+        
+        async function saveResultToSheet() {
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHHERaOcjnwfYOm8oFqHbY4EVqaZmKpvyIquT4raRvonGx3vgYLZ6UzrfkSpMGhPXhg/exec';
+            if (SCRIPT_URL.includes('여기에_배포된_스크립트_URL을_붙여넣으세요')) return;
+
+            const totalScore = Object.values(achievements).reduce((sum, ach) => sum + ach.correct, 0);
+            const totalProblems = allQuestions.length;
+            const dataToSend = {
+                // 학생 정보가 없으므로 익명으로 전송하거나 필요한 경우 고정값 사용
+                grade: "N/A", classNum: "N/A", stdNumber: "N/A", name: "익명",
+                totalScore,
+                totalProblems,
+                score_01: `${achievements['6-14-01'].correct}/${achievements['6-14-01'].total}`,
+                badge_01: achievements['6-14-01'].badge ? 'O' : 'X',
+                score_02: `${achievements['6-14-02'].correct}/${achievements['6-14-02'].total}`,
+                badge_02: achievements['6-14-02'].badge ? 'O' : 'X',
+                score_03: `${achievements['6-14-03'].correct}/${achievements['6-14-03'].total}`,
+                badge_03: achievements['6-14-03'].badge ? 'O' : 'X',
+                score_comp: `${achievements['comprehensive'].correct}/${achievements['comprehensive'].total}`,
+                badge_comp: achievements['comprehensive'].badge ? 'O' : 'X',
+            };
+            
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors', body: JSON.stringify(dataToSend)
+                });
+            } catch (error) {
+                console.error("결과 저장 중 에러:", error);
+                alert("결과를 시트에 저장하는 중 문제가 발생했습니다. 인터넷 연결을 확인해주세요.");
+            }
+        }
+
+        // --- 5. 교육적 보조 기능 함수 ---
+        const tips = {
+            "6-14-01": "하루 동안의 변화는 '지구의 자전' 때문에 일어나요. 태양의 위치가 변하는 것처럼 보이는 것은 사실 지구가 돌고 있기 때문이죠!",
+            "6-14-02": "계절별 변화는 '태양의 남중 고도'와 '낮의 길이' 두 가지가 핵심이에요. 이 두 가지가 기온을 결정한답니다.",
+            "6-14-03": "계절 변화의 근본 원인은 '기울어진 자전축'과 '공전'의 조합이에요. 지구가 기울어진 채로 태양 둘레를 돌기 때문에 계절이 생겨요.",
+            "comprehensive": "우리가 배운 과학 원리는 농업, 건축, 여행 등 우리 생활 모든 곳에 적용된답니다. 주변에서 과학 원리를 찾아보세요!"
+        };
+        
+        function showTip() {
+            const currentStandard = shuffledQuestions[currentQuestionIndex].standard;
+            document.getElementById('tip-content').textContent = tips[currentStandard];
+            const modal = document.getElementById('tip-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0', '-translate-y-4'), 10);
+        }
+
+        function closeTip() {
+            const modal = document.getElementById('tip-modal');
+            modal.classList.add('opacity-0', '-translate-y-4');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function showSeasonInfo(season) {
+            const infos = {
+                spring: "🌱 봄: 태양의 남중 고도가 점점 높아지고 낮이 길어져요.",
+                summer: "☀️ 여름: 태양의 남중 고도가 가장 높고 낮이 가장 길어요.",
+                autumn: "🍂 가을: 태양의 남중 고도가 점점 낮아지고 낮이 짧아져요.",
+                winter: "❄️ 겨울: 태양의 남중 고도가 가장 낮고 낮이 가장 짧아요."
+            };
+            alert(infos[season]);
+        }
+
+        // --- 6. 이벤트 리스너 연결 ---
+        document.getElementById('start-game-btn').addEventListener('click', startGame);
+        nextBtn.addEventListener('click', nextQuestion);
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            resultsScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
         });
 
-        // 게임 시작
-        window.onload = () => loadStage(currentStage);
     </script>
 </body>
 </html>
-
-
-
 
