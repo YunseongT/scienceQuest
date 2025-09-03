@@ -15,12 +15,12 @@
         .season-summer { background: linear-gradient(to bottom, #f8b500, #fceabb); }
         .season-autumn { background: linear-gradient(to bottom, #e67e22, #f39c12); }
         .season-winter { background: linear-gradient(to bottom, #00c6ff, #0072ff); }
-        .season-experiment, .season-intro, .season-end { background: linear-gradient(to bottom, #d7d2cc, #304352); }
+        .season-experiment { background: linear-gradient(to bottom, #d7d2cc, #304352); }
         .season-final { background: linear-gradient(to bottom, #8e44ad, #9b59b6); }
-        .game-card, .form-card {
+        .game-card {
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
         .option-btn {
@@ -48,50 +48,34 @@
         }
     </style>
 </head>
-<body class="transition-colors duration-1000 bg-gray-200">
+<body class="transition-colors duration-1000">
 
-    <!-- 학생 정보 입력 화면 -->
-    <div id="start-screen" class="min-h-screen w-full flex items-center justify-center p-4">
-        <div class="form-card w-full max-w-md rounded-2xl p-8 shadow-lg text-center">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">탐험가 정보 입력</h1>
-            <p class="text-gray-600 mb-6">결과를 저장하려면 정보를 입력해주세요.</p>
-            <form id="student-form">
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <input type="number" id="grade" placeholder="학년" class="p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    <input type="number" id="class" placeholder="반" class="p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <input type="number" id="number" placeholder="번호" class="p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    <input type="text" id="name" placeholder="이름" class="p-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-transform duration-200 hover:scale-105">
-                    탐험 시작하기
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- 게임 화면 -->
-    <div id="game-container" class="hidden min-h-screen w-full flex items-center justify-center p-4">
+    <div id="game-container" class="min-h-screen w-full flex items-center justify-center p-4">
         <div id="game-card" class="game-card w-full max-w-2xl rounded-2xl p-6 md:p-10 shadow-lg text-center">
             
+            <!-- 캐릭터 아이콘 -->
             <div id="character-icon" class="text-6xl mb-4">🌍</div>
             
+            <!-- 게임 내용 -->
             <h1 id="title" class="text-2xl md:text-3xl font-bold text-gray-800 mb-2"></h1>
             <p id="story" class="text-gray-600 mb-6 text-base md:text-lg"></p>
             <h2 id="question" class="text-xl md:text-2xl font-bold text-gray-800 mb-6"></h2>
 
-            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <!-- 선택지 버튼 -->
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </div>
 
+            <!-- 피드백 메시지 -->
             <p id="feedback" class="mt-6 text-lg font-semibold h-8"></p>
 
+            <!-- 다음 단계 버튼 -->
             <button id="next-btn" class="hidden mt-8 bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-transform duration-200 hover:scale-105">
                 다음으로
             </button>
         </div>
     </div>
 
-    <script type="module">
+    <script>
         const gameData = [
             {
                 season: 'intro',
@@ -203,8 +187,8 @@
             {
                 season: 'end',
                 icon: '🏆',
-                title: '탐험 완료! 결과 저장 중...',
-                story: '축하해! 너는 이제 계절의 변화 원리를 완벽하게 이해하는 최고의 계절 탐험가가 되었어. 결과가 곧 데이터베이스에 저장될 거야!',
+                title: '탐험 완료!',
+                story: '축하해! 너는 이제 계절의 변화 원리를 완벽하게 이해하는 최고의 계절 탐험가가 되었어. 앞으로도 우리 주변의 자연 현상에 계속 관심을 가져줘!',
                 question: '다시 탐험을 시작할까?',
                 options: [{ text: '처음부터 다시 시작하기', answer: true }],
                 feedbackCorrect: '좋아! 새로운 탐험을 시작하자!'
@@ -212,13 +196,9 @@
         ];
 
         let currentStage = 0;
-        let studentInfo = {};
-        let score = 0;
-        const totalProblems = gameData.filter(stage => stage.options.length > 1).length;
 
-        const startScreen = document.getElementById('start-screen');
-        const studentForm = document.getElementById('student-form');
         const gameContainer = document.getElementById('game-container');
+        const cardEl = document.getElementById('game-card');
         const iconEl = document.getElementById('character-icon');
         const titleEl = document.getElementById('title');
         const storyEl = document.getElementById('story');
@@ -227,60 +207,10 @@
         const feedbackEl = document.getElementById('feedback');
         const nextBtn = document.getElementById('next-btn');
 
-        studentForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            studentInfo = {
-                grade: document.getElementById('grade').value,
-                classNum: document.getElementById('class').value,
-                stdNumber: document.getElementById('number').value,
-                name: document.getElementById('name').value,
-            };
-            startScreen.classList.add('hidden');
-            gameContainer.classList.remove('hidden');
-            loadStage(currentStage);
-        });
-
-        async function saveResultToSheet() {
-            // --- 3단계: 여기에 2단계에서 복사한 웹 앱 URL을 붙여넣으세요! ---
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHHERaOcjnwfYOm8oFqHbY4EVqaZmKpvyIquT4raRvonGx3vgY0LZ6UzrfkSpMGhPXhg/exec';
-
-            if (SCRIPT_URL === '여기에_배포된_스크립트_URL을_붙여넣으세요') {
-                titleEl.textContent = '탐험 완료! (저장 설정 필요)';
-                storyEl.textContent = '결과를 저장하기 위한 구글 앱 스크립트 URL 설정이 필요합니다.';
-                return;
-            }
-
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    cache: 'no-cache',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        ...studentInfo,
-                        score: score,
-                        totalProblems: totalProblems
-                    })
-                });
-                
-                console.log("결과 전송 시도 완료.");
-                titleEl.textContent = '탐험 완료! 결과 저장 성공!';
-                storyEl.textContent = '축하해! 너는 이제 계절의 변화 원리를 완벽하게 이해하는 최고의 계절 탐험가가 되었어. 결과가 구글 스프레드시트에 저장되었을 거야!';
-
-            } catch (error) {
-                console.error("결과 저장 중 에러 발생: ", error);
-                titleEl.textContent = '탐험 완료! (저장 실패)';
-                storyEl.textContent = '결과를 구글 스프레드시트에 저장하는 중 문제가 발생했어요. 인터넷 연결을 확인하거나 스크립트 설정을 다시 확인해주세요.';
-            }
-        }
-
         function loadStage(stageIndex) {
             const stage = gameData[stageIndex];
-            
-            if (stage.season === 'end') {
-                saveResultToSheet(); // Firebase 함수 대신 구글 시트 저장 함수 호출
-            }
 
+            // 배경 업데이트
             gameContainer.className = `min-h-screen w-full flex items-center justify-center p-4 transition-colors duration-1000 season-${stage.season}`;
             
             iconEl.textContent = stage.icon;
@@ -303,22 +233,30 @@
         }
 
         function handleOptionClick(isCorrect, button) {
+            // 모든 버튼 비활성화
             Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);
+            
             const stage = gameData[currentStage];
 
             if (isCorrect) {
-                if (stage.options.length > 1) { 
-                    score++;
-                }
                 feedbackEl.textContent = stage.feedbackCorrect;
                 feedbackEl.classList.add('text-green-600');
                 button.classList.add('correct');
                 
-                nextBtn.classList.remove('hidden');
+                if (currentStage < gameData.length - 1) {
+                    nextBtn.classList.remove('hidden');
+                } else {
+                    // 마지막 스테이지(다시 시작)
+                    setTimeout(() => {
+                        currentStage = 0;
+                        loadStage(currentStage);
+                    }, 2000);
+                }
             } else {
                 feedbackEl.textContent = '음.. 다시 한번 생각해볼까?';
                 feedbackEl.classList.add('text-red-600');
                 button.classList.add('incorrect');
+                // 1초 후 버튼 다시 활성화
                 setTimeout(() => {
                     Array.from(optionsContainer.children).forEach(btn => btn.disabled = false);
                     button.classList.remove('incorrect');
@@ -330,19 +268,18 @@
         nextBtn.addEventListener('click', () => {
              if (gameData[currentStage].season === 'end') {
                 currentStage = 0;
-                score = 0;
-                startScreen.classList.remove('hidden');
-                gameContainer.classList.add('hidden');
-                studentForm.reset();
             } else {
                 currentStage++;
-                loadStage(currentStage);
             }
+            loadStage(currentStage);
         });
 
+        // 게임 시작
+        window.onload = () => loadStage(currentStage);
     </script>
 </body>
 </html>
+
 
 
 
